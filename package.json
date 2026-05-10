@@ -1,0 +1,21 @@
+{
+  "name": "xunji",
+  "version": "1.0.0",
+  "description": "训记训练数据 API 调用工具",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts",
+    "fetch": "XUNJI_API_KEY=${XUNJI_API_KEY} ts-node src/fetch-range.ts",
+    "fetch:month": "XUNJI_API_KEY=${XUNJI_API_KEY} ts-node src/fetch-range.ts $(date -v-1m +%Y-%m-%d) $(date +%Y-%m-%d)"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
+}

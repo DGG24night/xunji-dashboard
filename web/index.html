@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>训记数据分析</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- 头部 -->
+  <header class="header">
+    <div class="header-content">
+      <h1>🏋️ 训记数据分析</h1>
+      <button class="settings-btn" id="settingsBtn">⚙️ 设置</button>
+    </div>
+  </header>
+
+  <!-- 主要内容 -->
+  <main class="main-container">
+    <!-- 文件选择和用户信息 -->
+    <section class="control-panel">
+      <div class="control-item file-upload">
+        <label>📂 选择缓存文件夹</label>
+        <input type="file" id="fileInput" accept=".json" multiple webkitdirectory>
+        <button class="btn btn-primary" id="loadFileBtn">选择文件夹</button>
+      </div>
+      <div class="user-info-panel">
+        <div class="user-info-header">
+          <h4>👤 用户信息</h4>
+          <button class="btn btn-sm btn-secondary" id="editUserInfoBtn">编辑</button>
+        </div>
+        <div id="userInfoDisplay" class="user-info-display">
+          <div class="info-row">
+            <span class="info-label">用户名:</span>
+            <span id="displayName">未设置</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">性别:</span>
+            <span id="displayGender">未设置</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">出生日期:</span>
+            <span id="displayBirthdate">未设置</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">身高:</span>
+            <span id="displayHeight">未设置</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">体重:</span>
+            <span id="displayWeight">未设置</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">BMI:</span>
+            <span id="displayBMI">未设置</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">体脂率:</span>
+            <span id="displayBodyFat">未设置</span>
+          </div>
+          <div class="info-row full-width">
+            <span class="info-label">伤病信息:</span>
+            <span id="displayInjuries">无</span>
+          </div>
+        </div>
+        <div id="userInfoForm" class="user-info-form" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>用户名</label>
+              <input type="text" id="inputName" class="form-input" placeholder="请输入用户名">
+            </div>
+            <div class="form-group">
+              <label>性别</label>
+              <select id="inputGender" class="form-input">
+                <option value="">请选择</option>
+                <option value="男">男</option>
+                <option value="女">女</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>出生日期</label>
+              <input type="date" id="inputBirthdate" class="form-input">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>身高 (cm)</label>
+              <input type="number" id="inputHeight" class="form-input" placeholder="如: 175">
+            </div>
+            <div class="form-group">
+              <label>体重 (kg)</label>
+              <input type="number" id="inputWeight" class="form-input" placeholder="如: 70">
+            </div>
+            <div class="form-group">
+              <label>体脂率 (%)</label>
+              <input type="number" id="inputBodyFat" class="form-input" placeholder="如: 15">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label>伤病信息</label>
+              <textarea id="inputInjuries" class="form-input" rows="2" placeholder="如有伤病请描述，如：左膝半月板损伤、腰椎间盘突出等"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="saveUserInfoBtn">保存</button>
+            <button class="btn btn-secondary" id="cancelUserInfoBtn">取消</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 图表区域 -->
+    <section class="charts-section">
+      <div class="chart-card">
+        <h3>📈 训练量趋势</h3>
+        <div class="chart-controls">
+          <button class="chart-control-btn active" data-range="week">周</button>
+          <select id="monthSelect" class="select-input-sm">
+            <option value="">选择月份</option>
+          </select>
+          <select id="yearSelect" class="select-input-sm">
+            <option value="">选择年份</option>
+          </select>
+          <button class="chart-control-btn" data-range="custom">自定义</button>
+        </div>
+        <div class="custom-date-range" id="customDateRange" style="display: none;">
+          <input type="date" id="trendStartDate" class="date-input-sm">
+          <span>至</span>
+          <input type="date" id="trendEndDate" class="date-input-sm">
+          <button class="btn btn-primary btn-sm" id="applyCustomRange">应用</button>
+        </div>
+        <canvas id="trainingTrendChart"></canvas>
+      </div>
+      
+      <div class="chart-card">
+        <h3>🎯 部位分布</h3>
+        <canvas id="bodyPartPieChart"></canvas>
+      </div>
+      
+      <div class="chart-card">
+        <h3>🔥 卡路里消耗</h3>
+        <canvas id="calorieChart"></canvas>
+      </div>
+      
+      <div class="chart-card">
+        <h3>💪 动作重量趋势</h3>
+        <div class="exercise-selector">
+          <select id="exerciseSelect" class="select-input" size="1">
+            <option value="">-- 请选择动作 --</option>
+          </select>
+          <select id="exerciseYearSelect" class="select-input-sm">
+            <option value="">选择年份</option>
+          </select>
+          <button class="chart-control-btn" data-range="exerciseCustom">自定义</button>
+        </div>
+        <div class="custom-date-range" id="exerciseCustomDateRange" style="display: none;">
+          <input type="date" id="exerciseStartDate" class="date-input-sm">
+          <span>至</span>
+          <input type="date" id="exerciseEndDate" class="date-input-sm">
+          <button class="btn btn-primary btn-sm" id="applyExerciseCustomRange">应用</button>
+        </div>
+        <canvas id="exerciseWeightChart"></canvas>
+      </div>
+    </section>
+
+    <!-- AI建议 -->
+    <section class="ai-section">
+      <div class="ai-header">
+        <h3>💡 AI 训练建议</h3>
+        <div class="ai-controls">
+          <select id="aiProviderSelect" class="select-input">
+            <!-- 动态填充 -->
+          </select>
+          <select id="aiModelSelect" class="select-input">
+            <!-- 动态填充 -->
+          </select>
+          <button class="btn btn-primary" id="generateAdviceBtn">🔄 生成建议</button>
+        </div>
+      </div>
+      <div id="aiAdviceContainer" class="ai-advice-container">
+        <p class="placeholder-text">点击"生成建议"获取AI分析</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 设置面板 -->
+  <div class="settings-overlay" id="settingsOverlay">
+    <div class="settings-panel settings-panel-large">
+      <div class="settings-header">
+        <h3>⚙️ 设置</h3>
+        <button class="close-btn" id="closeSettingsBtn">✕</button>
+      </div>
+      <div class="settings-body">
+        <!-- 训记 API Key 设置 -->
+        <div class="providers-section">
+          <div class="providers-header">
+            <h4>🔑 训记 API Key</h4>
+          </div>
+          <div class="xunji-api-section">
+            <p class="hint-text">用于获取训记训练数据，可在训记App中申请</p>
+            <div class="form-group">
+              <input type="password" id="xunjiApiKeyInput" class="form-input" placeholder="xjllm_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary btn-sm" id="saveXunjiApiKeyBtn">保存</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 服务商设置 -->
+        <div class="providers-section">
+          <div class="providers-header">
+            <h4>🤖 AI 服务商</h4>
+            <button class="btn btn-primary btn-sm" id="addProviderBtn">+ 添加服务商</button>
+          </div>
+          <div id="providersList" class="providers-list">
+            <!-- 动态填充 -->
+          </div>
+        </div>
+
+        <!-- 添加/编辑提供商表单 -->
+        <div class="provider-form-section" id="providerFormSection" style="display: none;">
+          <h4 id="providerFormTitle">添加服务商</h4>
+          <div class="provider-form">
+            <div class="form-group">
+              <label>服务商名称</label>
+              <input type="text" id="providerNameInput" class="form-input" placeholder="如: DeepSeek、OpenAI、Claude">
+            </div>
+            
+            <div class="form-group">
+              <label>API 地址</label>
+              <div class="api-url-wrapper">
+                <input type="text" id="apiBaseUrlInput" class="form-input" placeholder="https://api.deepseek.com/v1">
+                <span class="api-url-suffix">/chat/completions</span>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>API 密钥</label>
+              <input type="password" id="apiKeyInput" class="form-input" placeholder="sk-xxxxxxxxxxxxxxxx">
+            </div>
+            
+            <div class="form-group">
+              <label>模型名称 <span class="hint">（多个模型用逗号分隔）</span></label>
+              <input type="text" id="modelInput" class="form-input" placeholder="deepseek-chat, deepseek-reasoner">
+            </div>
+            
+            <div class="form-actions">
+              <button class="btn btn-primary" id="saveProviderBtn">💾 保存</button>
+              <button class="btn btn-secondary" id="cancelProviderBtn">取消</button>
+              <button class="btn btn-secondary" id="testProviderBtn">🧪 测试连接</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 脚本 -->
+  <script src="js/data-parser.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/ai-advisor.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
