@@ -165,6 +165,56 @@ body {
   flex-shrink: 0;
 }
 
+.fetch-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.custom-fetch-range {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.custom-fetch-range span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.fetch-progress {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--primary-gradient);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+#progressText {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
 .control-item label {
   font-weight: 600;
   color: var(--text-secondary);

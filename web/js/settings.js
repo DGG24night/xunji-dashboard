@@ -199,7 +199,7 @@ const Settings = {
   /**
    * 获取训记 API Key
    */
-  getXunjiApiKey(): string {
+  getXunjiApiKey() {
     return localStorage.getItem(this.xunjiApiKeyKey) || '';
   },
 

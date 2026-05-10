@@ -46,6 +46,24 @@ const App = {
       fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
     }
 
+    // 从训记获取数据
+    const fetchDataBtn = document.getElementById('fetchDataBtn');
+    if (fetchDataBtn) {
+      fetchDataBtn.addEventListener('click', () => this.fetchLastYear());
+    }
+
+    // 自定义范围获取
+    const fetchCustomBtn = document.getElementById('fetchCustomBtn');
+    if (fetchCustomBtn) {
+      fetchCustomBtn.addEventListener('click', () => this.toggleCustomFetchRange());
+    }
+
+    // 开始自定义范围获取
+    const startFetchBtn = document.getElementById('startFetchBtn');
+    if (startFetchBtn) {
+      startFetchBtn.addEventListener('click', () => this.fetchCustomRange());
+    }
+
     // 生成建议按钮
     const generateAdviceBtn = document.getElementById('generateAdviceBtn');
     if (generateAdviceBtn) {
@@ -176,6 +194,240 @@ const App = {
       reader.onerror = (e) => reject(e);
       reader.readAsText(file);
     });
+  },
+
+  /**
+   * 切换自定义获取范围显示
+   */
+  toggleCustomFetchRange() {
+    const customFetchRange = document.getElementById('customFetchRange');
+    if (customFetchRange) {
+      const isVisible = customFetchRange.style.display !== 'none';
+      customFetchRange.style.display = isVisible ? 'none' : 'flex';
+      
+      // 初始化日期
+      if (!isVisible) {
+        const fetchStartDate = document.getElementById('fetchStartDate');
+        const fetchEndDate = document.getElementById('fetchEndDate');
+        const today = new Date();
+        const lastYear = new Date(today);
+        lastYear.setFullYear(today.getFullYear() - 1);
+        
+        if (fetchStartDate) fetchStartDate.value = lastYear.toISOString().split('T')[0];
+        if (fetchEndDate) fetchEndDate.value = today.toISOString().split('T')[0];
+      }
+    }
+  },
+
+  /**
+   * 获取近1年数据
+   */
+  async fetchLastYear() {
+    const today = new Date();
+    const lastYear = new Date(today);
+    lastYear.setFullYear(today.getFullYear() - 1);
+    
+    await this.fetchDataFromAPI(
+      lastYear.toISOString().split('T')[0],
+      today.toISOString().split('T')[0]
+    );
+  },
+
+  /**
+   * 自定义范围获取
+   */
+  async fetchCustomRange() {
+    const startDate = document.getElementById('fetchStartDate')?.value;
+    const endDate = document.getElementById('fetchEndDate')?.value;
+    
+    if (!startDate || !endDate) {
+      this.showToast('请选择开始和结束日期', 'error');
+      return;
+    }
+    
+    if (startDate > endDate) {
+      this.showToast('开始日期不能晚于结束日期', 'error');
+      return;
+    }
+    
+    await this.fetchDataFromAPI(startDate, endDate);
+  },
+
+  /**
+   * 从API获取数据
+   */
+  async fetchDataFromAPI(startDate, endDate) {
+    const apiKey = Settings.getXunjiApiKey();
+    
+    if (!apiKey) {
+      this.showToast('请先在设置中配置训记API Key', 'error');
+      Settings.openPanel();
+      return;
+    }
+
+    // 显示进度条
+    const fetchProgress = document.getElementById('fetchProgress');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    if (fetchProgress) fetchProgress.style.display = 'block';
+
+    // 生成日期列表
+    const dates = [];
+    const current = new Date(startDate);
+    const end = new Date(endDate);
+    while (current <= end) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    const totalDays = dates.length;
+    let completedDays = 0;
+    let successCount = 0;
+    let errorCount = 0;
+
+    // 加载已缓存的数据
+    this.parsedData = [];
+    this.loadCachedData();
+
+    for (const date of dates) {
+      // 检查是否已有缓存
+      const cachedData = this.getCachedData(date);
+      if (cachedData) {
+        completedDays++;
+        successCount++;
+        this.updateProgress(completedDays, totalDays, `跳过 ${date} (已缓存)`);
+        continue;
+      }
+
+      try {
+        const response = await fetch('https://trains.xunjiapp.cn/api_trains_for_llm', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ datestr: date })
+        });
+
+        const result = await response.json();
+
+        if (result.res && Array.isArray(result.res) && result.res.length > 0) {
+          // 保存到缓存
+          this.saveDataToCache(date, result.res);
+          // 解析数据
+          const records = DataParser.parseAllRecords(result.res);
+          this.parsedData.push(...records);
+          successCount++;
+        }
+
+        completedDays++;
+        this.updateProgress(completedDays, totalDays, `获取 ${date}`);
+
+        // 避免请求过快
+        await this.sleep(500);
+      } catch (error) {
+        console.error(`获取 ${date} 失败:`, error);
+        errorCount++;
+        completedDays++;
+        this.updateProgress(completedDays, totalDays, `失败 ${date}`);
+      }
+    }
+
+    // 隐藏进度条
+    if (fetchProgress) {
+      setTimeout(() => {
+        fetchProgress.style.display = 'none';
+      }, 2000);
+    }
+
+    // 更新图表
+    if (this.parsedData.length > 0) {
+      this.showToast(`获取完成！成功 ${successCount} 天，失败 ${errorCount} 天`, 'success');
+      this.initMonthYearSelectors();
+      this.updateExerciseSelector();
+      this.analyzeData();
+    } else {
+      this.showToast('未获取到训练数据', 'error');
+    }
+  },
+
+  /**
+   * 更新进度条
+   */
+  updateProgress(current, total, text) {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    
+    if (progressFill) {
+      const percent = Math.round((current / total) * 100);
+      progressFill.style.width = `${percent}%`;
+    }
+    if (progressText) {
+      progressText.textContent = `${text} (${current}/${total})`;
+    }
+  },
+
+  /**
+   * 加载缓存数据
+   */
+  loadCachedData() {
+    const cacheKey = 'xunji-training-cache';
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        Object.values(cacheData).forEach(records => {
+          if (Array.isArray(records)) {
+            const parsed = DataParser.parseAllRecords(records);
+            this.parsedData.push(...parsed);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('加载缓存失败:', e);
+    }
+  },
+
+  /**
+   * 获取指定日期的缓存数据
+   */
+  getCachedData(date) {
+    const cacheKey = 'xunji-training-cache';
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        return cacheData[date] || null;
+      }
+    } catch (e) {
+      console.error('读取缓存失败:', e);
+    }
+    return null;
+  },
+
+  /**
+   * 保存数据到缓存
+   */
+  saveDataToCache(date, data) {
+    const cacheKey = 'xunji-training-cache';
+    try {
+      let cacheData = {};
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        cacheData = JSON.parse(cached);
+      }
+      cacheData[date] = data;
+      localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+    } catch (e) {
+      console.error('保存缓存失败:', e);
+    }
+  },
+
+  /**
+   * 延迟函数
+   */
+  sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   },
 
   /**

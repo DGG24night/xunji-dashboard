@@ -25,6 +25,25 @@
         <input type="file" id="fileInput" accept=".json" multiple webkitdirectory>
         <button class="btn btn-primary" id="loadFileBtn">选择文件夹</button>
       </div>
+      <div class="control-item file-upload">
+        <label>☁️ 从训记获取数据</label>
+        <div class="fetch-controls">
+          <button class="btn btn-success" id="fetchDataBtn">📥 获取近1年数据</button>
+          <button class="btn btn-secondary" id="fetchCustomBtn">自定义范围</button>
+        </div>
+        <div class="custom-fetch-range" id="customFetchRange" style="display: none;">
+          <input type="date" id="fetchStartDate" class="date-input-sm">
+          <span>至</span>
+          <input type="date" id="fetchEndDate" class="date-input-sm">
+          <button class="btn btn-primary btn-sm" id="startFetchBtn">开始获取</button>
+        </div>
+        <div id="fetchProgress" class="fetch-progress" style="display: none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <span id="progressText">准备中...</span>
+        </div>
+      </div>
       <div class="user-info-panel">
         <div class="user-info-header">
           <h4>👤 用户信息</h4>
